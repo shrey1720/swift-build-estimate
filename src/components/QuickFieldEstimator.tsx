@@ -16,13 +16,22 @@ const QuickFieldEstimator = ({ onBack }: QuickFieldEstimatorProps) => {
   const [width, setWidth] = useState<string>("");
   const [depth, setDepth] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("1");
-  const [steelPercentage, setSteelPercentage] = useState<string>("1.5");
+  const [numberOfBars, setNumberOfBars] = useState<string>("4");
+  const [barDiameterMm, setBarDiameterMm] = useState<string>("20");
 
   const [results, setResults] = useState({
     concreteVolume: 0,
-    steelWeight: 0,
+    steelArea: 0,
     totalCost: 0
   });
+
+  // Calculate steel area
+  function calculateSteelArea(number_of_bars: number, bar_diameter_mm: number): number {
+    // Area of one bar: π × (d/2)^2
+    const radius = bar_diameter_mm / 2;
+    const area_one_bar = Math.PI * Math.pow(radius, 2); // mm²
+    return area_one_bar * number_of_bars;
+  }
 
   // Calculate results in real-time
   useEffect(() => {
@@ -30,20 +39,28 @@ const QuickFieldEstimator = ({ onBack }: QuickFieldEstimatorProps) => {
     const w = parseFloat(width) || 0;
     const d = parseFloat(depth) || 0;
     const q = parseFloat(quantity) || 0;
-    const steelPct = parseFloat(steelPercentage) || 0;
+    const nBars = parseInt(numberOfBars) || 0;
+    const barDia = parseFloat(barDiameterMm) || 0;
     const concRate = parseFloat(concreteRate) || 0;
     const stlRate = parseFloat(steelRate) || 0;
 
     const concreteVolume = l * w * d * q;
-    const steelWeight = (concreteVolume * (steelPct / 100)) * 7850;
+    const steelArea = calculateSteelArea(nBars, barDia); // mm²
+    // For cost, estimate steel weight: area (mm²) × length (m) × density (kg/m³)
+    // Convert area mm² to m²: steelArea / 1e6
+    // Assume bar length = member length × quantity
+    const totalBarLength = l * q; // m
+    const steelVolume_m3 = (steelArea / 1e6) * totalBarLength; // m³
+    const steelDensity = 7850; // kg/m³
+    const steelWeight = steelVolume_m3 * steelDensity; // kg
     const totalCost = (concreteVolume * concRate) + (steelWeight * stlRate);
 
     setResults({
       concreteVolume,
-      steelWeight,
+      steelArea,
       totalCost
     });
-  }, [length, width, depth, quantity, steelPercentage, concreteRate, steelRate]);
+  }, [length, width, depth, quantity, numberOfBars, barDiameterMm, concreteRate, steelRate]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -155,13 +172,22 @@ const QuickFieldEstimator = ({ onBack }: QuickFieldEstimatorProps) => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="steelPercentage">Steel % (0.8-4%)</Label>
+                    <Label htmlFor="numberOfBars">Number of Steel Bars</Label>
                     <Input
-                      id="steelPercentage"
+                      id="numberOfBars"
                       type="number"
-                      step="0.1"
-                      value={steelPercentage}
-                      onChange={(e) => setSteelPercentage(e.target.value)}
+                      value={numberOfBars}
+                      onChange={(e) => setNumberOfBars(e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="barDiameterMm">Bar Diameter (mm)</Label>
+                    <Input
+                      id="barDiameterMm"
+                      type="number"
+                      value={barDiameterMm}
+                      onChange={(e) => setBarDiameterMm(e.target.value)}
                       className="mt-1"
                     />
                   </div>
@@ -181,14 +207,12 @@ const QuickFieldEstimator = ({ onBack }: QuickFieldEstimatorProps) => {
                     {results.concreteVolume.toFixed(3)} m³
                   </div>
                 </div>
-                
                 <div className="bg-white/10 rounded-lg p-4">
-                  <div className="text-primary-light text-sm mb-1">Steel Weight</div>
+                  <div className="text-primary-light text-sm mb-1">Steel Area</div>
                   <div className="text-2xl font-bold text-primary-foreground">
-                    {results.steelWeight.toFixed(0)} kg
+                    {results.steelArea.toFixed(0)} mm²
                   </div>
                 </div>
-                
                 <div className="bg-white/20 rounded-lg p-4 shadow-calculation">
                   <div className="text-primary-light text-sm mb-1">Estimated Cost</div>
                   <div className="text-3xl font-bold text-primary-foreground">
@@ -201,7 +225,7 @@ const QuickFieldEstimator = ({ onBack }: QuickFieldEstimatorProps) => {
                 <div className="mt-6 pt-4 border-t border-white/20">
                   <div className="text-sm text-primary-light space-y-1">
                     <div>Formula: L × W × D × Qty</div>
-                    <div>Steel: Volume × {steelPercentage}% × 7850 kg/m³</div>
+                    <div>Steel Area: π × (diameter/2)<sup>2</sup> × number of bars</div>
                   </div>
                 </div>
               )}
@@ -215,17 +239,17 @@ const QuickFieldEstimator = ({ onBack }: QuickFieldEstimatorProps) => {
             <h3 className="text-lg font-semibold mb-3 text-accent">Quick Tips</h3>
             <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
               <div>
-                <strong>Steel Percentages:</strong>
+                <strong>Steel Bar Diameters (mm):</strong>
                 <ul className="mt-1 space-y-1">
-                  <li>• Slabs: 0.8-1.2%</li>
-                  <li>• Beams: 1.0-2.5%</li>
+                  <li>• Slabs: 8-12 mm</li>
+                  <li>• Beams: 12-20 mm</li>
                 </ul>
               </div>
               <div>
-                <strong>Typical Usage:</strong>
+                <strong>Typical Number of Bars:</strong>
                 <ul className="mt-1 space-y-1">
-                  <li>• Columns: 1.5-4.0%</li>
-                  <li>• Foundations: 0.8-1.5%</li>
+                  <li>• Columns: 4-8 bars</li>
+                  <li>• Foundations: 6-12 bars</li>
                 </ul>
               </div>
             </div>

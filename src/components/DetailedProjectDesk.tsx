@@ -13,7 +13,8 @@ interface Member {
   width: number;
   depth: number;
   quantity: number;
-  steelPercentage: number;
+  numberOfBars: number;
+  barDiameterMm: number;
 }
 
 interface DetailedProjectDeskProps {
@@ -36,7 +37,8 @@ const DetailedProjectDesk = ({ onBack }: DetailedProjectDeskProps) => {
       width: 0.3,
       depth: 3.0,
       quantity: 4,
-      steelPercentage: 2.5
+      numberOfBars: 4,
+      barDiameterMm: 20
     }
   ]);
 
@@ -48,7 +50,8 @@ const DetailedProjectDesk = ({ onBack }: DetailedProjectDeskProps) => {
       width: 0,
       depth: 0,
       quantity: 1,
-      steelPercentage: 1.5
+      numberOfBars: 4,
+      barDiameterMm: 20
     };
     setMembers([...members, newMember]);
   };
@@ -63,16 +66,30 @@ const DetailedProjectDesk = ({ onBack }: DetailedProjectDeskProps) => {
     ));
   };
 
+  // Calculate steel area
+  function calculateSteelArea(number_of_bars: number, bar_diameter_mm: number): number {
+    const radius = bar_diameter_mm / 2;
+    const area_one_bar = Math.PI * Math.pow(radius, 2); // mm²
+    return area_one_bar * number_of_bars;
+  }
+
   // Calculate totals
   const calculations = members.reduce((acc, member) => {
     const concreteVolume = member.length * member.width * member.depth * member.quantity;
-    const steelWeight = (concreteVolume * (member.steelPercentage / 100)) * 7850;
-    
+    const steelArea = calculateSteelArea(member.numberOfBars, member.barDiameterMm); // mm²
+    // For cost, estimate steel weight: area (mm²) × length (m) × density (kg/m³)
+    // Convert area mm² to m²: steelArea / 1e6
+    // Assume bar length = member length × quantity
+    const totalBarLength = member.length * member.quantity; // m
+    const steelVolume_m3 = (steelArea / 1e6) * totalBarLength; // m³
+    const steelDensity = 7850; // kg/m³
+    const steelWeight = steelVolume_m3 * steelDensity; // kg
+
     acc.totalConcreteVolume += concreteVolume;
     acc.totalSteelWeight += steelWeight;
-    
+    acc.totalSteelArea += steelArea;
     return acc;
-  }, { totalConcreteVolume: 0, totalSteelWeight: 0 });
+  }, { totalConcreteVolume: 0, totalSteelWeight: 0, totalSteelArea: 0 });
 
   const materialCost = (calculations.totalConcreteVolume * parseFloat(concreteRate)) + 
                       (calculations.totalSteelWeight * parseFloat(steelRate));
@@ -270,12 +287,20 @@ const DetailedProjectDesk = ({ onBack }: DetailedProjectDeskProps) => {
                           />
                         </div>
                         <div>
-                          <Label>Steel %</Label>
+                          <Label>Number of Bars</Label>
                           <Input
                             type="number"
-                            step="0.1"
-                            value={member.steelPercentage}
-                            onChange={(e) => updateMember(member.id, "steelPercentage", parseFloat(e.target.value) || 0)}
+                            value={member.numberOfBars}
+                            onChange={(e) => updateMember(member.id, "numberOfBars", parseInt(e.target.value) || 0)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label>Bar Diameter (mm)</Label>
+                          <Input
+                            type="number"
+                            value={member.barDiameterMm}
+                            onChange={(e) => updateMember(member.id, "barDiameterMm", parseFloat(e.target.value) || 0)}
                             className="mt-1"
                           />
                         </div>
@@ -302,18 +327,16 @@ const DetailedProjectDesk = ({ onBack }: DetailedProjectDeskProps) => {
                               </span>
                             </div>
                             <div>
-                              <span className="text-muted-foreground">Steel: </span>
+                              <span className="text-muted-foreground">Steel Area: </span>
                               <span className="font-medium">
-                                {((member.length * member.width * member.depth * member.quantity) * 
-                                  (member.steelPercentage / 100) * 7850).toFixed(0)} kg
+                                {calculateSteelArea(member.numberOfBars, member.barDiameterMm).toFixed(0)} mm²
                               </span>
                             </div>
                             <div>
                               <span className="text-muted-foreground">Cost: </span>
                               <span className="font-medium text-accent">
                                 ₹ {(((member.length * member.width * member.depth * member.quantity) * parseFloat(concreteRate)) + 
-                                   (((member.length * member.width * member.depth * member.quantity) * 
-                                     (member.steelPercentage / 100) * 7850) * parseFloat(steelRate)))
+                                   ((calculateSteelArea(member.numberOfBars, member.barDiameterMm) / 1e6 * member.length * member.quantity * 7850) * parseFloat(steelRate)))
                                    .toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                               </span>
                             </div>
@@ -343,9 +366,9 @@ const DetailedProjectDesk = ({ onBack }: DetailedProjectDeskProps) => {
                     </div>
                   </div>
                   <div className="bg-white/10 rounded-lg p-4">
-                    <div className="text-primary-light text-sm mb-1">Total Steel Weight</div>
+                    <div className="text-primary-light text-sm mb-1">Total Steel Area</div>
                     <div className="text-2xl font-bold text-primary-foreground">
-                      {calculations.totalSteelWeight.toFixed(0)} kg
+                      {calculations.totalSteelArea.toFixed(0)} mm²
                     </div>
                   </div>
                 </div>
