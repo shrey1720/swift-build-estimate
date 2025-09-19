@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calculator, Building2, ArrowRight } from "lucide-react";
+import { Calculator, Building2, ArrowRight, Scale } from "lucide-react";
 import QuickFieldEstimator from "@/components/QuickFieldEstimator";
 import DetailedProjectDesk from "@/components/DetailedProjectDesk";
+import SteelWeightCalculator from "@/components/SteelWeightCalculator";
 
 const Index = () => {
-  const [activeModule, setActiveModule] = useState<"home" | "quick" | "detailed">("home");
+  const [activeModule, setActiveModule] = useState<"home" | "quick" | "detailed" | "steel">("home");
 
   if (activeModule === "quick") {
     return <QuickFieldEstimator onBack={() => setActiveModule("home")} />;
@@ -14,6 +15,10 @@ const Index = () => {
 
   if (activeModule === "detailed") {
     return <DetailedProjectDesk onBack={() => setActiveModule("home")} />;
+  }
+
+  if (activeModule === "steel") {
+    return <SteelWeightCalculator onBack={() => setActiveModule("home")} />;
   }
 
   return (
@@ -30,7 +35,7 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {/* Quick Field Estimator Card */}
           <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-all duration-300 border-0">
             <div className="p-8">
@@ -111,6 +116,48 @@ const Index = () => {
                 size="lg"
               >
                 Open Project Desk
+              </Button>
+            </div>
+          </Card>
+
+          {/* Steel Weight Calculator Card */}
+          <Card className="bg-gradient-card shadow-card hover:shadow-elevated transition-all duration-300 border-0">
+            <div className="p-8">
+              <div className="flex items-center mb-6">
+                <div className="p-3 bg-secondary text-secondary-foreground rounded-lg mr-4">
+                  <Scale className="h-8 w-8" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-card-foreground">Steel Weight Calculator</h2>
+                  <p className="text-muted-foreground">Civil engineering calculations</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4 mb-8">
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <ArrowRight className="h-4 w-4 mr-2 text-secondary" />
+                  IS 456 compliant calculations
+                </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <ArrowRight className="h-4 w-4 mr-2 text-secondary" />
+                  Beam, column & slab support
+                </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <ArrowRight className="h-4 w-4 mr-2 text-secondary" />
+                  Cutting length calculations
+                </div>
+                <div className="flex items-center text-sm text-muted-foreground">
+                  <ArrowRight className="h-4 w-4 mr-2 text-secondary" />
+                  Accurate steel weight estimates
+                </div>
+              </div>
+
+              <Button 
+                onClick={() => setActiveModule("steel")}
+                className="w-full bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+                size="lg"
+              >
+                Calculate Steel Weight
               </Button>
             </div>
           </Card>
